@@ -1,0 +1,49 @@
+<title>Desk Status</title>
+<style>
+:root{--bg:#0F1412;--card:#18201D;--ink:#E6EDE9;--soft:#94A39C;--line:#28332E;--up:#4BC58F;--down:#E4785F;--accent:#C9A227}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#F4F6F4;--card:#FFFFFF;--ink:#16211C;--soft:#5D6B64;--line:#DCE3DE;--up:#137A52;--down:#B4432F;--accent:#8A6D10}}
+:root[data-theme="light"]{--bg:#F4F6F4;--card:#FFFFFF;--ink:#16211C;--soft:#5D6B64;--line:#DCE3DE;--up:#137A52;--down:#B4432F;--accent:#8A6D10}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;padding:20px 14px 48px}
+.wrap{max-width:720px;margin:0 auto;display:grid;gap:16px}
+h1{font-size:22px;margin:0;letter-spacing:-.01em}
+.built{font:12px ui-monospace,Consolas,monospace;color:var(--soft)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;gap:10px}
+.card h2{margin:0;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);font-weight:600}
+.big{display:flex;flex-wrap:wrap;gap:18px;align-items:baseline}
+.big b{font-size:30px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.big span{color:var(--soft);font:13px ui-monospace,Consolas,monospace}
+table{width:100%;border-collapse:collapse;font:13.5px ui-monospace,Consolas,monospace}
+th{text-align:left;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--soft);padding:0 0 6px;font-weight:600}
+td{padding:6px 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+td.r,th.r{text-align:right}
+.up{color:var(--up)}.down{color:var(--down)}
+.pill{display:inline-block;font:11px ui-monospace,Consolas,monospace;padding:3px 7px;border-radius:999px;border:1px solid var(--line);color:var(--soft)}
+.run{border-top:1px solid var(--line);padding-top:9px;display:grid;gap:3px}
+.run b{font:12px ui-monospace,Consolas,monospace;color:var(--accent)}
+.run p{margin:0;font-size:13px;color:var(--soft)}
+.setup{font-size:13.5px}
+.setup b{font-family:ui-monospace,Consolas,monospace}
+.none{color:var(--soft);font-size:13.5px}
+</style>
+<div class="wrap">
+<div><h1>Desk status</h1><div class="built">built Sat 19 Sep, 06:37 PM Pacific Daylight Time · snapshot, not live</div></div>
+<div class="card"><h2>Account</h2><div class="big"><b>$134.42</b><span>crypto $134.42</span><span>cash unknown until the next cycle</span><span>7 positions</span></div><div class="none">Holdings as the broker last reported them · 33 min old. Prices are daily closes, not live quotes.</div></div>
+<div class="card"><h2>Positions</h2><table><tr><th>pair</th><th class="r">value</th><th class="r">price</th><th class="r">vs entry</th></tr><tr><td>BTC</td><td class="r">$79.00</td><td class="r">$81277.4900</td><td class="r down">-1.2%</td></tr><tr><td>LINK</td><td class="r">$16.02</td><td class="r">$12.4420</td><td class="r down">-0.4%</td></tr><tr><td>MORPHO</td><td class="r">$15.84</td><td class="r">$2.6184</td><td class="r down">-4.3%</td></tr><tr><td>ONDO</td><td class="r">$10.12</td><td class="r">$0.4220</td><td class="r up">+14.2%</td></tr><tr><td>AAVE</td><td class="r">$8.01</td><td class="r">$140.9800</td><td class="r up">+9.4%</td></tr><tr><td>ETH</td><td class="r">$5.43</td><td class="r">$2629.2200</td><td class="r up">+8.5%</td></tr><tr><td>UNI</td><td class="r">$0.02</td><td class="r">$8.6432</td><td class="r up">+25.1%</td></tr></table></div>
+<div class="card"><h2>Limits today</h2><div><span class="pill">risk agent · defensive</span></div><table><tr><td>order size</td><td class="r">12%</td><td>per pair</td><td class="r">18%</td></tr><tr><td>per theme</td><td class="r">25%</td><td>trades today</td><td class="r">3</td></tr><tr><td>volatility target</td><td class="r">5.0%</td><td>cooldown</td><td class="r">24h</td></tr><tr><td>max spread</td><td class="r">2.2%</td><td>loss breaker</td><td class="r">30%</td></tr></table></div>
+<div class="card"><h2>Today’s runs</h2><div class="run"><b>00:53 UTC · exit · no orders</b><p>All checks live: agentic account ••3167 (crypto ••9628), quotes timestamped 17:53:14 PT — seconds old. Everything below is valued at the **bid**, which is what I&#x27;d actually receive.
+
+| | bid | value | vs entry (bid) | today | call |
+|---|---|---|---|---|---|
+|</p></div><div class="run"><b>01:01 UTC · exit · no orders</b><p>All checks live: agentic account ••3167 (crypto ••9628), quotes timestamped 18:00:12 PT — seconds old. Note this run fires ~7 minutes after the last exit cycle, so prices have barely moved; the substance below is the ruling, not the tape.
+
+Everything valued at</p></div><div class="run"><b>01:05 UTC · live · buy LINK $35.00</b><p>**Filled: 2.8028 LINK at an average $12.4856, $35.00 notional, $0 fee** (order `6aaf3129…`, crypto account ••9628). Executed a hair inside the quoted $12.4878 ask. LINK is now **4.0901 units**, blended entry ~$11.6493.
+
+---
+
+## Summary
+
+**Pre-trade checks (all</p></div></div>
+<div class="card"><h2>Setups the watch sees</h2><div class="setup"><b>AVAX</b> — fell -8.4% in an hour</div><div class="setup"><b>XTZ</b> — fell -6.0% in an hour; volume +489% against yesterday with price +15.8%</div></div>
+<div class="card"><h2>Scorecard</h2><table><tr><th>horizon</th><th class="r">n</th><th class="r">profitable</th><th class="r">net</th><th class="r">vs BTC</th></tr><tr><td>1d</td><td class="r">16</td><td class="r">44%</td><td class="r up">+0.98%</td><td class="r down">-0.63%</td></tr></table><div class="none">17 scored decisions, 9 closing trades. Net is after the quoted spread; vs BTC is the same money held in Bitcoin.</div></div>
+</div>
