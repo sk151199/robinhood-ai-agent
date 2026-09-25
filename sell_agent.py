@@ -12,12 +12,15 @@ Holding is a legitimate outcome. A tripped level is a reason to look, not an ins
 """
 
 import datetime as dt
+import json
 import os
 
 from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient, HookMatcher, ResultMessage, SystemMessage
 
+import exit_plans
 import exit_watch
 import journal
+import lessons
 import macro_feed
 import positions_store
 import rh_tools
@@ -55,7 +58,43 @@ How to decide:
 Before any order: get_accounts (use the agentic one), get_portfolio, get_crypto_positions, then get_crypto_quotes
 for what you will sell. Sell with dollar_amount, market orders, time_in_force gtc. Never sell more than is held.
 
+Set the exit levels yourself. For every position you rule on, state the gain at which you would take profit, the
+loss you are prepared to sit through, and where possible the price that proves the thesis wrong. These are yours
+to choose per position and they are enforced between runs: a fixed percentage cannot be right for every holding,
+because a pair that swings 6% a day reaches +25% on noise while the same move in Bitcoin is a real event. Set them
+from the thesis and the pair's own volatility — how far the idea should run if it is right, and what price says it
+is not — rather than from a habit. Revise them whenever the evidence moves; a level you set last week is not
+binding on you today. You are shown your standing plans each session.
+
 Finish with a short plain-text summary: what you looked at, what you did or did not do, and why."""
+
+RULINGS_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["rulings"],
+    "properties": {
+        "rulings": {
+            "type": "array",
+            "description": "One entry per position you ruled on this session.",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["symbol", "call", "take_profit_pct", "stop_pct", "note"],
+                "properties": {
+                    "symbol": {"type": "string"},
+                    "call": {"type": "string", "enum": ["hold", "trim", "exit"]},
+                    "take_profit_pct": {"type": "number", "minimum": 0.03, "maximum": 5.0,
+                                        "description": "Gain from entry at which to take profit, e.g. 0.18 for 18%."},
+                    "stop_pct": {"type": "number", "minimum": 0.03, "maximum": 0.9,
+                                 "description": "Loss from entry you are prepared to sit through, e.g. 0.12."},
+                    "invalidation_price": {"type": ["number", "null"],
+                                           "description": "Price that proves the thesis wrong, or null."},
+                    "note": {"type": "string", "description": "Why these levels, in one line."},
+                },
+            },
+        },
+    },
+}
 
 
 def _prompt(found: list, scheduled: bool = False) -> str:
@@ -74,11 +113,19 @@ def _prompt(found: list, scheduled: bool = False) -> str:
         "Every open position, with the thesis recorded when it was bought:",
         scorecard.position_review(),
         "",
+        "Your exit plans:",
+        exit_plans.as_prompt_section(positions_store.load()[0]),
+        "",
         "Macro tape (live):",
         macro_feed.as_prompt_section(),
         "",
         "Recent cycles from the trading agent:",
         journal.as_prompt_section(3),
+        "",
+        lessons.as_prompt_section("sell"),
+        "",
+        "Exit timing, measured:",
+        scorecard.exit_review(8),
         "",
         "Decide on every position above: sell all, sell part, or hold, with reasons.",
     ])
@@ -93,7 +140,8 @@ def allowed_tools() -> list:
     """Account reads, quotes and the order tool. No research tools: this is a decision about
     positions already held, made in minutes, not a research session."""
     names = set(rh_tools.ACCOUNT_TOOLS) | set(rh_tools.HARNESS_TOOLS) | {
-        rh_tools.PREFIX + "get_crypto_quotes", rh_tools.PREFIX + "get_currency_pairs"}
+        rh_tools.PREFIX + "get_crypto_quotes", rh_tools.PREFIX + "get_currency_pairs",
+        "StructuredOutput"}
     return sorted(names | set(rh_tools.gated_order_tools()))
 
 
@@ -117,7 +165,9 @@ async def run(found: list, scheduled: bool = False) -> list:
     """Wake the sell agent for these positions. Returns the sells it placed."""
     risk = RiskManager(risk_policy.effective())
     gate = OrderGate(risk, sell_only=True, exempt_daily_limit=True)
-    passthrough = rh_tools.passthrough_tools()
+    # StructuredOutput is how the schema is satisfied; denying it cost a whole review's exit
+    # plans, which the agent reported and could not work around.
+    passthrough = rh_tools.passthrough_tools() | {"StructuredOutput"}
     pending, placed = {}, []
     started_at = dt.datetime.now(dt.timezone.utc).isoformat()
     outcome = {"summary": "", "cost": 0.0}
@@ -176,6 +226,7 @@ async def run(found: list, scheduled: bool = False) -> list:
         max_budget_usd=settings.sell_budget_usd,
         thinking={"type": "adaptive"},
         effort=settings.sell_effort,
+        output_format={"type": "json_schema", "schema": RULINGS_SCHEMA},
     )
 
     try:
@@ -190,6 +241,7 @@ async def run(found: list, scheduled: bool = False) -> list:
                 elif isinstance(message, ResultMessage):
                     outcome["summary"] = (message.result or "").strip()
                     outcome["cost"] = message.total_cost_usd or 0.0
+                    outcome["structured"] = message.structured_output
                     logger.info("Sell agent ended: %s after %d turns, cost $%.4f",
                                 message.subtype, message.num_turns, message.total_cost_usd or 0.0)
     except Exception:
@@ -200,6 +252,18 @@ async def run(found: list, scheduled: bool = False) -> list:
     if agent.usage_limited(outcome["summary"]):
         logger.error("Sell agent stopped by the Claude usage limit; positions left untouched.")
         return []
+
+    rulings = outcome.get("structured")
+    if isinstance(rulings, str):
+        try:
+            rulings = json.loads(rulings)
+        except json.JSONDecodeError:
+            rulings = None
+    if isinstance(rulings, dict):
+        kept = exit_plans.remember(rulings.get("rulings"))
+        if kept:
+            logger.info("Sell agent set exit levels for %d position(s).", kept)
+    exit_plans.forget([symbol for symbol, (quantity, _s) in positions_store.load()[0].items() if quantity <= 0])
 
     logger.info("Sell agent: %s", outcome["summary"][:2000])
     journal.append(mode="exit" if not settings.dry_run else "exit_dry_run", summary=outcome["summary"],

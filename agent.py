@@ -7,6 +7,7 @@ from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient, HookMatcher, R
 
 import crypto_news
 import journal
+import lessons
 import market_context
 import pairs_catalog
 import positions_store
@@ -295,6 +296,8 @@ def _cycle_prompt(market_open: bool, trades_remaining: int, require_trade: bool 
     lines += [
         "Your open positions:",
         scorecard.position_review(),
+        "",
+        lessons.as_prompt_section("trader"),
         "",
         "Your recent cycles:",
         journal.as_prompt_section(settings.journal_lookback),

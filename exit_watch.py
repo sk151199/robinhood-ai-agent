@@ -27,6 +27,7 @@ if __name__ == "__main__":
     if "--live" in sys.argv:
         os.environ["DRY_RUN"] = "false"
 
+import exit_plans  # noqa: E402
 import mover_monitor  # noqa: E402
 import positions_store  # noqa: E402
 import scorecard  # noqa: E402
@@ -42,6 +43,10 @@ RETRIGGER_HOURS = 4.0
 MAX_SELL_RUNS_PER_DAY = 4
 # A fast break needs no threshold breach to be worth a look.
 FAST_DROP_1H = -0.06
+# A residue too small to sell cannot be acted on, so it must not wake a session. UNI dust worth
+# 1.6 cents tripped the take-profit line three times in a day, each wake spending a full cycle
+# to conclude that nothing could be done.
+MIN_POSITION_VALUE = 5.00
 
 
 def _now() -> dt.datetime:
@@ -90,15 +95,22 @@ def triggers(state: dict = None) -> list:
             continue
         row = market[symbol]
         price = row.get("price")
+        if price and quantity * price < MIN_POSITION_VALUE:
+            continue
         entry = (scorecard._last_buy(symbol) or {}).get("price")
         move = (price - entry) / entry if entry and price else None
+        plan = exit_plans.for_symbol(symbol)
+        source = "the level you set" if plan["agent_set"] else "the fallback level"
         reasons = []
-        if move is not None and move <= -settings.stop_loss_pct:
-            reasons.append(f"down {move:.1%} from its ${entry:,.4f} entry, past the "
-                           f"-{settings.stop_loss_pct:.0%} stop guideline")
-        if move is not None and move >= settings.take_profit_pct:
-            reasons.append(f"up {move:.1%} from its ${entry:,.4f} entry, past the "
-                           f"+{settings.take_profit_pct:.0%} take-profit guideline")
+        if move is not None and move <= -plan["stop_pct"]:
+            reasons.append(f"down {move:.1%} from its ${entry:,.4f} entry, past {source} of "
+                           f"-{plan['stop_pct']:.0%}")
+        if move is not None and move >= plan["take_profit_pct"]:
+            reasons.append(f"up {move:.1%} from its ${entry:,.4f} entry, past {source} of "
+                           f"+{plan['take_profit_pct']:.0%}")
+        if plan["invalidation_price"] and price and price <= plan["invalidation_price"]:
+            reasons.append(f"trading at ${price:,.6g}, through the ${plan['invalidation_price']:,.6g} "
+                           "invalidation price you recorded for this thesis")
         if (row.get("change_1h") or 0) <= FAST_DROP_1H:
             reasons.append(f"fell {row['change_1h']:.1%} in the last hour")
         if not reasons:

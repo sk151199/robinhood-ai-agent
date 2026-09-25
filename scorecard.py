@@ -309,6 +309,39 @@ def score(today: dt.date = None) -> dict:
     return {"decisions": len(entries), "horizons": summary}
 
 
+def exit_review(limit: int = 12) -> str:
+    """What each sale did afterwards — the only measure of selling too early.
+
+    Realised P&L cannot answer this: it counts every closed trade as a win if it was green on
+    the day, which is exactly how a book of small gains and held losers looks excellent while
+    trailing the benchmark.
+    """
+    sells = [entry for entry in decisions() if entry.get("side") == "sell"][-limit:]
+    if not sells:
+        return "No exits recorded yet, so there is nothing to say about exit timing."
+
+    today = dt.datetime.now(dt.timezone.utc).date()
+    lines, early, late = [], 0, 0
+    for entry in sells:
+        prices = closes(entry["symbol"])
+        if not prices or not entry.get("price"):
+            continue
+        sold_on = dt.date.fromisoformat(entry["timestamp"][:10])
+        now = prices[max(prices)]
+        since = (now - entry["price"]) / entry["price"]
+        days = (today - sold_on).days
+        verdict = "it kept running" if since > 0.02 else ("good exit" if since < -0.02 else "flat since")
+        early += 1 if since > 0.02 else 0
+        late += 1 if since < -0.02 else 0
+        lines.append(f"  {entry['symbol']} sold {sold_on.isoformat()} at ${entry['price']:,.6g} "
+                     f"(${entry['dollars']:.2f}), now ${now:,.6g}: {since:+.1%} in {days}d — {verdict}")
+    if not lines:
+        return "Exits recorded, but without usable price history to judge them."
+    header = (f"What happened after each exit. {early} of {len(lines)} kept rising after you sold "
+              f"(selling early), {late} fell further (selling well).")
+    return header + chr(10) + chr(10).join(lines)
+
+
 def as_report() -> str:
     result = score()
     if not result["decisions"]:

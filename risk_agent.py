@@ -17,6 +17,7 @@ import os
 from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient, HookMatcher, ResultMessage
 
 import fundamentals
+import lessons
 import macro_feed
 import research_agent
 import rh_tools
@@ -129,6 +130,8 @@ def _prompt(account_value: float, brief: dict, trades_today: int, instruction: s
         "",
         "Today's research brief (what the limits will be applied to):",
         research_agent.as_prompt_section(brief) if brief else "No brief this session.",
+        "",
+        lessons.as_prompt_section("risk"),
         "",
         "Set this session's risk policy.",
     ])

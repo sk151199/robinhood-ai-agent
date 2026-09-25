@@ -24,6 +24,7 @@ import coin_universe
 import crypto_news
 import fundamentals
 import journal
+import lessons
 import macro_feed
 import market_context
 import mover_monitor
@@ -247,6 +248,8 @@ def _prompt() -> str:
         journal.as_prompt_section(3),
         "",
         picks_review(),
+        "",
+        lessons.as_prompt_section("research"),
         "",
         "Research the market and return your brief.",
     ])

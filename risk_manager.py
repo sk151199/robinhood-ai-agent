@@ -55,6 +55,20 @@ class RiskManager:
         return int(self._state.get("trades_today", 0))
 
     def day_start_value(self) -> float:
+        """Today's opening value, or the last known account value when the day has not opened yet.
+
+        Returning 0 here was a silent input failure, not a conservative default: the risk agent
+        sizes every percentage against this base, so a zero made the first policy of each day the
+        tightest of the week. Two of six policies were written that way before the weekly review
+        spotted it.
+        """
+        value = self._raw_day_start_value()
+        if value:
+            return value
+        import portfolio_store
+        return float(portfolio_store.load().get("total_value") or 0.0)
+
+    def _raw_day_start_value(self) -> float:
         """Today's opening value, or 0 before the first cycle of the day. The risk agent is
         given this as a starting point and refreshes it with get_portfolio itself."""
         if self._state.get("day") != dt.date.today().isoformat():

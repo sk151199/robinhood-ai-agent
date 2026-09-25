@@ -53,6 +53,11 @@ class Settings:
     # Past this the trader proceeds without a brief, so a slow desk cannot eat the trading window.
     research_timeout_minutes: int = _get_int("RESEARCH_TIMEOUT_MINUTES", 45)
 
+    # Weekly review: reads the record and writes the lessons the other agents carry.
+    review_effort: str = os.getenv("REVIEW_EFFORT", "high").strip().lower() or "high"
+    review_max_turns: int = _get_int("REVIEW_MAX_TURNS", 20)
+    review_budget_usd: float = _get_float("REVIEW_BUDGET_USD", 4.0)
+
     # Sell agent: woken by exit_watch when a position breaks a level. Sells only.
     sell_agent_enabled: bool = _get_bool("SELL_AGENT_ENABLED", True)
     sell_effort: str = os.getenv("SELL_EFFORT", "high").strip().lower() or "high"

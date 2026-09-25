@@ -208,7 +208,7 @@ class OrderGate:
         if self._age(f"positions:{asset}") > settings.max_state_age_seconds:
             return deny(f"{kind} positions are stale: call get_{kind}_positions again")
 
-        if self.risk.circuit_breaker_tripped(self.portfolio["total_value"]):
+        if side == "buy" and self.risk.circuit_breaker_tripped(self.portfolio["total_value"]):
             return deny("daily loss breaker tripped")
         if not self.exempt_daily_limit and self.risk.trade_budget_remaining() <= 0:
             return deny(f"daily limit of {self.limits.max_trades_today} orders reached")
