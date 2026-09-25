@@ -3,3 +3,6 @@ logs/
 __pycache__/
 *.pyc
 .venv/
+
+# Generated status snapshot: contains live positions and P&L.
+status.html
